@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilio Voice Call</title>
+    <script src="https://sdk.twilio.com/js/client/v1.14/twilio.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #3498db;
+            margin-bottom: 1rem;
+        }
+
+        input[type="tel"] {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            margin: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Twilio Voice Call</h1>
+        <input type="tel" id="phoneNumber" placeholder="Enter phone number">
+        <button id="callButton">Make Call</button>
+        <button id="hangupButton" disabled>Hang Up</button>
+        <div id="status">Status: Ready</div>
+    </div>
+
+    <script>
+        let device;
+        let token;
+        let currentConnection;
+
+        const callButton = document.getElementById('callButton');
+        const hangupButton = document.getElementById('hangupButton');
+        const phoneNumberInput = document.getElementById('phoneNumber');
+        const statusDiv = document.getElementById('status');
+        const twilioNumber = '{{ twilio_number }}';  // This line receives the Twilio number from Flask
+
+
+
+        function updateStatus(message) {
+            statusDiv.textContent = `Status: ${message}`;
+        }
+
+    fetch('/token')
+        .then(response => response.json())
+        .then(data => {
+            console.log("Received token:", data.token);
+            return Twilio.Device.setup(data.token, {
+                codecPreferences: ['opus', 'pcmu'],
+                debug: true
+            });
+        })
+        .then(_device => {
+            device = _device;
+            console.log('Twilio.Device is set up');
+
+            device.on('ready', function () {
+                console.log('Twilio.Device is ready');
+                updateStatus('Ready');
+                callButton.disabled = false;
+            });
+
+            device.on('error', function (error) {
+                console.error('Twilio.Device Error:', error);
+                updateStatus('Error: ' + error.message);
+            });
+
+            device.on('connect', function (connection) {
+                console.log('Successfully established call');
+                updateStatus('In call');
+            });
+
+            device.on('disconnect', function () {
+                console.log('Call ended');
+                updateStatus('Call ended');
+            });
+
+            console.log("Device setup complete");
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            updateStatus('Error: ' + error.message);
+        });
+
+    callButton.onclick = () => {
+        const phoneNumber = phoneNumberInput.value;
+        if (phoneNumber && device) {
+            updateStatus('Initiating call...');
+            console.log('Attempting to call ' + phoneNumber);
+            device.connect({ To: phoneNumber, From: twilioNumber });
+        } else {
+            updateStatus('Please enter a phone number and ensure device is ready');
+        }
+    };
+
+    hangupButton.onclick = () => {
+        if (device) {
+            device.disconnectAll();
+        }
+    };
+FormData
+
+    </script>
+</body>
+
+</html>
